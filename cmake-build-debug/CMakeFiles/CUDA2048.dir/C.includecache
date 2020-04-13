@@ -1,0 +1,24 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/mulholbn/Documents/CUDA2048/main.c
+stdio.h
+-
+types.h
+/home/mulholbn/Documents/CUDA2048/types.h
+string.h
+-
+stdbool.h
+-
+stdlib.h
+-
+
+/home/mulholbn/Documents/CUDA2048/types.h
+stdint.h
+-
+
