@@ -4,15 +4,13 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-
-
-
 void upSolver(Board * input, Board * output);
 void downSolver(Board * input, Board * output);
 void leftSolver(Board * input, Board * output);
 void rightSolver(Board * input, Board * output);
 void randGen(Board * movedBoard);
 status moveHandler(Board *input, Move currMove, Board * output);
+move makeList(move arr[], move data[], int start, int end, int index, int r);
 
 uint32_t score(Board * input);
 
@@ -38,11 +36,16 @@ int main() {
 
 
 
-
     Board * out;
     out = malloc(sizeof(Board));
     status yow;
     yow = moveHandler(&Ayye,down,out);
+    score = out;
+    move moves[] = {up, down, left, right};
+    int r = 5;
+    int data[r];
+    int n = sizeof(arr)/sizeof(arr[0]);
+    makeList(moves, data, i+1, end, index+1, r);
     if(yow != boardUpdated){
         printf("This function was unable to move the board: %d \r\n",yow);
         exit(25);
@@ -63,6 +66,16 @@ int main() {
     return 0;
 }
 
+
+/**
+ *Generate a list of five moves from given list of possible moves
+*/
+move makeList(move arr[], move data[], int start, int end, int index, int r){
+	for(int i = start; i<=end && end-1+1 >= r-index; i++){
+		data[index] = arr[i];
+		makeList(arr, data, i+1, end, index+1, r);
+	}
+}
 
 /**
  *This takes the predetermined move and returns a Board that has had that move applied. This should be the link between the recursive section of the code and the solver
