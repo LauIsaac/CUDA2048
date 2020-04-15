@@ -17,6 +17,8 @@ stdbool.h
 -
 stdlib.h
 -
+math.h
+-
 
 /home/mulholbn/Documents/CUDA2048/types.h
 stdint.h

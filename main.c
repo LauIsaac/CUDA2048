@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <math.h>
 
 void upSolver(Board * input, Board * output);
 void downSolver(Board * input, Board * output);
@@ -10,9 +11,22 @@ void leftSolver(Board * input, Board * output);
 void rightSolver(Board * input, Board * output);
 void randGen(Board * movedBoard);
 status moveHandler(Board *input, Move currMove, Board * output);
-move makeList(move arr[], move data[], int start, int end, int index, int r);
-
 uint32_t score(Board * input);
+
+void makeMoveList(Board * bIn, MoveList predefinedMoves, MoveList moves, uint8_t end, uint8_t index, uint8_t r);
+
+
+//MAKE This number 4^(#Iterations -1)
+#define NUMLATEMOVES 4
+
+//Array to hold all moves, seperated by the move which are the first dim of the array
+uint32_t MoveScores[NUMMOVES][NUMLATEMOVES];
+
+//Array to keep track of how many of a move have been added to the array of scores.
+uint16_t MoveTracker[NUMMOVES];
+
+
+
 
 int main() {
     printf("Hello, World!\n");
@@ -34,30 +48,10 @@ int main() {
     Ayye[3][2] = 2;
     Ayye[3][3] = 2;
 
+    MoveList predefinedList = {up,down,left,right};
+    MoveList tempList;
+    makeMoveList(&Ayye,predefinedList,tempList,NUMMOVES,0,NUMITERATIONS);
 
-
-    Board * out;
-    out = malloc(sizeof(Board));
-    status yow;
-    yow = moveHandler(&Ayye,down,out);
-    score = out;
-    move moves[] = {up, down, left, right};
-    int r = 5;
-    int data[r];
-    int n = sizeof(arr)/sizeof(arr[0]);
-    makeList(moves, data, i+1, end, index+1, r);
-    if(yow != boardUpdated){
-        printf("This function was unable to move the board: %d \r\n",yow);
-        exit(25);
-    }
-    else{
-        for(int i =0; i < HEIGHT;i++){
-            for(int j=0;j<WIDTH;j++){
-                printf("[%d] ",(*out)[i][j]);
-            }
-            printf("\r\n");
-        }
-    }
     printf("Completed\r\n");
     while(1){
 
@@ -68,14 +62,51 @@ int main() {
 
 
 /**
- *Generate a list of five moves from given list of possible moves
-*/
-move makeList(move arr[], move data[], int start, int end, int index, int r){
-	for(int i = start; i<=end && end-1+1 >= r-index; i++){
-		data[index] = arr[i];
-		makeList(arr, data, i+1, end, index+1, r);
+ This function generates all moves with a set recursive depth. It stores all scores for all boards generated.
+ * @param bIn The initial board that all moves will start with
+ * @param predefinedMoves A list of predefined moves. The algorithm is easier if this is predefined
+ * @param moves An empty base array, this is here to hold the moves that are being performed
+ * @param end The end of the predefinedMove array
+ * @param index Current index of the moves array
+ * @param r The max number of iterations to perform
+ */
+void makeMoveList(Board * bIn, MoveList predefinedMoves, MoveList moves, uint8_t end, uint8_t index, uint8_t r){
+    if(index == r){
+        Board * moveBoard;
+        moveBoard = malloc(sizeof(Board));
+        //TODO: This is dirty and should be changed 100% so as not to have 2 memcpys as its copying it here and later on, but that can be gotten to later.
+        memcpy(moveBoard,bIn,sizeof(Board));
+        status sOut;
+
+        uint8_t ref = moves[0];
+
+        uint8_t j;
+        for(j = 0; j < r; j++) {
+            sOut = moveHandler(moveBoard, moves[j], moveBoard);
+            if (sOut == boardFull) {
+                MoveScores[ref][MoveTracker[ref]] = 0;
+                printf("Board with move [%d,%d,%d,%d,%d] is full af \r\n",moves[0],moves[1],moves[2],moves[3],moves[4]);
+                MoveTracker[ref]++;
+                free(moveBoard);
+                return;
+            }
+        }
+        uint32_t boardScore = score(moveBoard);
+        printf("Board with move [%d,%d,%d,%d,%d] had a score of %d \r\n",moves[0],moves[1],moves[2],moves[3],moves[4],boardScore);
+        MoveScores[ref][MoveTracker[ref]] = 0;
+        MoveTracker[ref]++;
+        free(moveBoard);
+        return;
+    }
+
+	for(int i = 0; i <=end; i++){
+		moves[index] = predefinedMoves[i];
+		makeMoveList(bIn, predefinedMoves, moves, end, index+1, r);
 	}
 }
+
+
+
 
 /**
  *This takes the predetermined move and returns a Board that has had that move applied. This should be the link between the recursive section of the code and the solver
@@ -87,15 +118,19 @@ move makeList(move arr[], move data[], int start, int end, int index, int r){
 status moveHandler(Board *input, Move currMove, Board * output){
     switch(currMove){
         case(up):
+            printf("Moving up \r\n");
             upSolver(input,output);
             break;
         case down:
+            printf("Moving down \r\n");
             downSolver(input,output);
             break;
         case left:
+            printf("Moving left \r\n");
             leftSolver(input,output);
             break;
         case right:
+            printf("Moving right \r\n");
             rightSolver(input,output);
             break;
         default:
@@ -138,7 +173,9 @@ uint32_t score(Board * input){
     for(uint8_t i=0; i < HEIGHT; i++){
         for(uint8_t j=0; j < WIDTH; j++){
             scoreVal += (*input)[i][j];
+            printf("[%d] ",(*input)[i][j]);
         }
+        printf("\r\n");
     }
     return scoreVal;
 }
@@ -318,8 +355,8 @@ void randGen(Board * movedBoard){
     }
     uint32_t randomSpace = randomVal % SIZE;
     randomVal = rand();
-
-    if(randomVal >= (9*RAND_MAX/10)){
+    uint32_t randdist = 9*(RAND_MAX/10);
+    if(randomVal >= randdist){
         (*movedBoard)[randomSpace/WIDTH][randomSpace%HEIGHT] = 4;
     }
     else{

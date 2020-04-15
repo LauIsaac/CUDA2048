@@ -6,6 +6,11 @@
 #define HEIGHT 4
 //Set SIZE to equal WIDTH * HEIGHT. Saves processing power.
 #define SIZE 16
+//Number of iterations to search through
+#define NUMITERATIONS 2
+//Number of moves
+#define NUMMOVES 4
+
 
 
 
@@ -18,6 +23,7 @@ typedef enum move_t {
 
 
 typedef uint16_t Board[HEIGHT][WIDTH];
+typedef Move MoveList[NUMMOVES];
 
 typedef enum status_t {
     boardUpdated = 0,
