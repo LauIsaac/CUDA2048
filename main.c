@@ -17,7 +17,7 @@ void makeMoveList(Board * bIn, MoveList predefinedMoves, MoveList moves, uint8_t
 
 
 //MAKE This number 4^(#Iterations -1)
-#define NUMLATEMOVES 4
+#define NUMLATEMOVES 16384
 
 //Array to hold all moves, seperated by the move which are the first dim of the array
 uint32_t MoveScores[NUMMOVES][NUMLATEMOVES];
@@ -34,14 +34,14 @@ int main() {
     Ayye[0][0] = 0;
     Ayye[0][1] = 0;
     Ayye[0][2] = 0;
-    Ayye[0][3] = 0;
+    Ayye[0][3] = 256;
     Ayye[1][0] = 2;
     Ayye[1][1] = 0;
-    Ayye[1][2] = 0;
+    Ayye[1][2] = 128;
     Ayye[1][3] = 0;
     Ayye[2][0] = 256;
     Ayye[2][1] = 2;
-    Ayye[2][2] = 0;
+    Ayye[2][2] = 128;
     Ayye[2][3] = 2;
     Ayye[3][0] = 256;
     Ayye[3][1] = 16;
@@ -52,10 +52,23 @@ int main() {
     MoveList tempList;
     makeMoveList(&Ayye,predefinedList,tempList,NUMMOVES,0,NUMITERATIONS);
 
-    printf("Completed\r\n");
-    while(1){
 
+    uint16_t i, j;
+    uint32_t maxScore = 0;
+    uint8_t moveIndex;
+    for(i = 0; i < NUMMOVES; i++){
+        for(j = 0; j < NUMLATEMOVES;j++){
+            if(MoveScores[i][j] > maxScore){
+                maxScore = MoveScores[i][j];
+                moveIndex = i;
+            }
+        }
     }
+    uint16_t total = MoveTracker[0] + MoveTracker[1] + MoveTracker[2] + MoveTracker[3];
+    printf("The best move(%d) had a score of %d. Tested a total of %d moves\r\n", moveIndex,maxScore,total);
+
+    printf("Completed\r\n");
+
 
     return 0;
 }
@@ -85,15 +98,15 @@ void makeMoveList(Board * bIn, MoveList predefinedMoves, MoveList moves, uint8_t
             sOut = moveHandler(moveBoard, moves[j], moveBoard);
             if (sOut == boardFull) {
                 MoveScores[ref][MoveTracker[ref]] = 0;
-                printf("Board with move [%d,%d,%d,%d,%d] is full af \r\n",moves[0],moves[1],moves[2],moves[3],moves[4]);
+                //printf("Board with move [%d,%d,%d,%d,%d] is full af \r\n",moves[0],moves[1],moves[2],moves[3],moves[4]);
                 MoveTracker[ref]++;
                 free(moveBoard);
                 return;
             }
         }
         uint32_t boardScore = score(moveBoard);
-        printf("Board with move [%d,%d,%d,%d,%d] had a score of %d \r\n",moves[0],moves[1],moves[2],moves[3],moves[4],boardScore);
-        MoveScores[ref][MoveTracker[ref]] = 0;
+        //printf("Board with move [%d,%d,%d,%d,%d] had a score of %d \r\n",moves[0],moves[1],moves[2],moves[3],moves[4],boardScore);
+        MoveScores[ref][MoveTracker[ref]] = boardScore;
         MoveTracker[ref]++;
         free(moveBoard);
         return;
@@ -118,19 +131,19 @@ void makeMoveList(Board * bIn, MoveList predefinedMoves, MoveList moves, uint8_t
 status moveHandler(Board *input, Move currMove, Board * output){
     switch(currMove){
         case(up):
-            printf("Moving up \r\n");
+           // printf("Moving up \r\n");
             upSolver(input,output);
             break;
         case down:
-            printf("Moving down \r\n");
+           // printf("Moving down \r\n");
             downSolver(input,output);
             break;
         case left:
-            printf("Moving left \r\n");
+           // printf("Moving left \r\n");
             leftSolver(input,output);
             break;
         case right:
-            printf("Moving right \r\n");
+           // printf("Moving right \r\n");
             rightSolver(input,output);
             break;
         default:
@@ -172,10 +185,15 @@ uint32_t score(Board * input){
     scoreVal = 0;
     for(uint8_t i=0; i < HEIGHT; i++){
         for(uint8_t j=0; j < WIDTH; j++){
-            scoreVal += (*input)[i][j];
-            printf("[%d] ",(*input)[i][j]);
+            if((*input)[i][j] == 2){
+                scoreVal += 2;
+            }
+            else if((*input)[i][j] != 0){
+                scoreVal += (*input)[i][j]+(((*input)[i][j])/2);
+            }
+            //printf("[%d] ",(*input)[i][j]);
         }
-        printf("\r\n");
+       // printf("\r\n");
     }
     return scoreVal;
 }
@@ -346,7 +364,7 @@ void downSolver(Board * input, Board * output){
  */
 void randGen(Board * movedBoard){
     //Add a randomly chosen set of positions to get the seed, with multiplication values to provide more randomness. This is arbitrary and can be changed
-    uint16_t seed = (*movedBoard)[0][0] + 2*((*movedBoard)[0][3]) + 3 * ((*movedBoard)[1][2]) + 5 * ((*movedBoard)[3][0]) + 7 * ((*movedBoard)[3][3]);
+    uint32_t seed = (*movedBoard)[0][0] + 2*((*movedBoard)[0][3]) + 3 * ((*movedBoard)[1][2]) + 5 * ((*movedBoard)[3][0]) + 7 * ((*movedBoard)[3][3]) + 4 * ((*movedBoard)[2][2]) + 8 * ((*movedBoard)[2][1]) + 3 * ((*movedBoard)[0][1]);
 
     srand(seed);
     uint32_t randomVal = rand();
