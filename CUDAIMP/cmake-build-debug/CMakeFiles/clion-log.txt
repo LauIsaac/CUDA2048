@@ -1,0 +1,13 @@
+/home/mulholbn/.local/share/JetBrains/Toolbox/apps/CLion/ch-0/201.6668.126/bin/cmake/linux/bin/cmake -DCMAKE_BUILD_TYPE=Debug -G "CodeBlocks - Unix Makefiles" /home/mulholbn/Documents/CUDA/CUDA2048/CUDAIMP
+-- The CUDA compiler identification is unknown
+CMake Error at CMakeLists.txt:2 (project):
+  No CMAKE_CUDA_COMPILER could be found.
+
+  Tell CMake where to find the compiler by setting either the environment
+  variable "CUDACXX" or the CMake cache entry CMAKE_CUDA_COMPILER to the full
+  path to the compiler, or to the compiler name if it is in the PATH.
+
+
+-- Configuring incomplete, errors occurred!
+See also "/home/mulholbn/Documents/CUDA/CUDA2048/CUDAIMP/cmake-build-debug/CMakeFiles/CMakeOutput.log".
+See also "/home/mulholbn/Documents/CUDA/CUDA2048/CUDAIMP/cmake-build-debug/CMakeFiles/CMakeError.log".
