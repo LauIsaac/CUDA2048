@@ -134,12 +134,12 @@ __device__ void rightSolver(Board * output){
 }
 
 
-__device__ void upSolver(Board input, Board * output){
+__device__ void upSolver(Board * input, Board * output){
     int8_t i, j, moveCounter, mergeCounter;
 
     for(int q = 0; q < HEIGHT; q++){
         for(int r = 0; r < WIDTH; r++){
-            (*output)[q][r] = input[q][r];
+            (*output)[q][r] = (*input)[q][r];
         }
     }
 
@@ -257,7 +257,7 @@ __device__ void downSolver(Board * output){
  * @param output A pointer for the board after the move has occurred to be stored in.
  * @return Returns the status of the move. Whether or not the board was updated.
  */
-__device__ status moveHandler(Board input, Board * output, Move currMove){
+__device__ status moveHandler(Board * input, Board * output, Move currMove){
 
     
 
@@ -339,7 +339,7 @@ __global__ void kernel(Board *BoardIn, int * scoreList){
 
     scoreList[threadNum] = 0;
     for(i = 0; i < NUMMOVES; i++){
-        stat = moveHandler(boardIn,&boardOut,mList[i]);
+        stat = moveHandler(&boardIn,&boardOut,mList[i]);
         if(stat != boardUpdated){
             break;
         }
