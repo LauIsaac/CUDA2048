@@ -6,11 +6,11 @@
 
 #IncludeRegexTransform: 
 
-/home/mulholbn/Documents/CUDA2048/main.c
+/home/mulholbn/Documents/CUDA/CUDA2048/main.c
 stdio.h
 -
 types.h
-/home/mulholbn/Documents/CUDA2048/types.h
+/home/mulholbn/Documents/CUDA/CUDA2048/types.h
 string.h
 -
 stdbool.h
@@ -20,7 +20,7 @@ stdlib.h
 math.h
 -
 
-/home/mulholbn/Documents/CUDA2048/types.h
+/home/mulholbn/Documents/CUDA/CUDA2048/types.h
 stdint.h
 -
 

@@ -1,3 +1,3 @@
-/home/mulholbn/Documents/CUDA2048/cmake-build-debug/CMakeFiles/rebuild_cache.dir
-/home/mulholbn/Documents/CUDA2048/cmake-build-debug/CMakeFiles/CUDA2048.dir
-/home/mulholbn/Documents/CUDA2048/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/mulholbn/Documents/CUDA/CUDA2048/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/home/mulholbn/Documents/CUDA/CUDA2048/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/mulholbn/Documents/CUDA/CUDA2048/cmake-build-debug/CMakeFiles/CUDA2048.dir

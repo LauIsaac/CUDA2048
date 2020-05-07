@@ -3,112 +3,24 @@
 #include "types.h"
 #include <stdio.h>
 #include <stdbool.h>
+#include <curand_kernel.h>
 
 
-void upSolver(Board * input, Board * output);
-void downSolver(Board * input, Board * output);
-void leftSolver(Board * input, Board * output);
-void rightSolver(Board * input, Board * output);
-void randGen(Board * movedBoard);
-status moveHandler(Board *input, Move currMove, Board * output);
-uint32_t score(Board * input);
-
-void makeMoveList(Board * bIn, MoveList predefinedMoves, MoveList moves, uint8_t end, uint8_t index, uint8_t r);
-
-/**
- * This will be removed and turned into the kernel
- */
-void makeMoveList(Board * bIn, MoveList predefinedMoves, MoveList moves, uint8_t end, uint8_t index, uint8_t r){
-    if(index == r){
-        Board * moveBoard;
-        moveBoard = malloc(sizeof(Board));
-        //TODO: This is dirty and should be changed 100% so as not to have 2 memcpys as its copying it here and later on, but that can be gotten to later.
-        memcpy(moveBoard,bIn,sizeof(Board));
-        status sOut;
-
-        uint8_t ref = moves[0];
-
-        uint8_t j;
-        for(j = 0; j < r; j++) {
-            sOut = moveHandler(moveBoard, moves[j], moveBoard);
-            if (sOut == boardFull) {
-                MoveScores[ref][MoveTracker[ref]] = 0;
-                //printf("Board with move [%d,%d,%d,%d,%d] is full af \r\n",moves[0],moves[1],moves[2],moves[3],moves[4]);
-                MoveTracker[ref]++;
-                free(moveBoard);
-                return;
-            }
-        }
-        uint32_t boardScore = score(moveBoard);
-        //printf("Board with move [%d,%d,%d,%d,%d] had a score of %d \r\n",moves[0],moves[1],moves[2],moves[3],moves[4],boardScore);
-        MoveScores[ref][MoveTracker[ref]] = boardScore;
-        MoveTracker[ref]++;
-        free(moveBoard);
-        return;
-    }
-
-    for(int i = 0; i <=end; i++){
-        moves[index] = predefinedMoves[i];
-        makeMoveList(bIn, predefinedMoves, moves, end, index+1, r);
-    }
-}
+#define m0Mask 0xC000
+#define m1Mask 0x3000
+#define m2Mask 0x0C00
+#define m3Mask 0x0300
+#define m4Mask 0x00C0
+#define m5Mask 0x0030
+#define m6Mask 0x000C
+#define m7Mask 0x0003
 
 
 
 
-/**
- *This takes the predetermined move and returns a Board that has had that move applied. This should be the link between the recursive section of the code and the solver
- * @param input The board that is requested to be solved
- * @param currMove The move to apply to the board
- * @param output A pointer for the board after the move has occurred to be stored in.
- * @return Returns the status of the move. Whether or not the board was updated.
- */
-__device__ status moveHandler(Board *input, Move currMove, Board * output){
-    switch(currMove){
-        case(up):
-            // printf("Moving up \r\n");
-            upSolver(input,output);
-            break;
-        case down:
-            // printf("Moving down \r\n");
-            downSolver(input,output);
-            break;
-        case left:
-            // printf("Moving left \r\n");
-            leftSolver(input,output);
-            break;
-        case right:
-            // printf("Moving right \r\n");
-            rightSolver(input,output);
-            break;
-        default:
-            exit(EXIT_FAILURE);
+const __restrict__ Board BoardIn;
 
-    }
 
-    bool fail = true;
-    bool changed = false;
-    for(uint8_t i=0; i < HEIGHT; i++){
-        for(uint8_t j=0; j < WIDTH;j++) {
-            if ((*output)[i][j] == 0) {
-                fail = false;
-            }
-            if ((*output)[i][j] != (*input)[i][j]) {
-                changed = true;
-            }
-        }
-    }
-
-    if(fail){
-        return boardFull;
-    }
-    else if(!changed){
-        return boardUnchanged;
-    }
-    randGen(output);
-    return boardUpdated;
-
-}
 
 /**
  * This function returns a score for the Board. Right now just returns the game score, may be worked to include neighboring tiles combined scores if we need more accuracy.
@@ -133,9 +45,7 @@ __device__ uint32_t score(Board * input){
     return scoreVal;
 }
 
-__device__ void leftSolver(Board *input, Board * output){
-    //Boilerplate code to transfer the input Board into the output.
-    memcpy(output,input,sizeof(Board));
+__device__ void leftSolver(Board * output){
     int8_t i, j, moveCounter, mergeCounter;
 
     //This section moves all items through the 0's.
@@ -176,9 +86,7 @@ __device__ void leftSolver(Board *input, Board * output){
 }
 
 
-__device__ void rightSolver(Board * input, Board * output){
-    //Boilerplate code to transfer the input Board into the output.
-    memcpy(output,input,sizeof(Board));
+__device__ void rightSolver(Board * output){
     int8_t i, j, moveCounter, mergeCounter;
 
     //This section moves all items through the 0's.
@@ -216,9 +124,7 @@ __device__ void rightSolver(Board * input, Board * output){
 }
 
 
-__device__ void upSolver(Board * input, Board * output){
-    //Boilerplate code to transfer the input Board into the output.
-    memcpy(output,input,sizeof(Board));
+__device__ void upSolver(Board * output){
     int8_t i, j, moveCounter, mergeCounter;
 
     //This section moves all items through the 0's.
@@ -256,9 +162,7 @@ __device__ void upSolver(Board * input, Board * output){
 
 
 
-__device__ void downSolver(Board * input, Board * output){
-    //Boilerplate code to transfer the input Board into the output.
-    memcpy(output,input,sizeof(Board));
+__device__ void downSolver(Board * output){
     int8_t i, j, moveCounter, mergeCounter;
 
     //This section moves all items through the 0's.
@@ -293,12 +197,129 @@ __device__ void downSolver(Board * input, Board * output){
 
 }
 
+
+/**
+ *This takes the predetermined move and returns a Board that has had that move applied. This should be the link between the recursive section of the code and the solver
+ * @param input The board that is requested to be solved
+ * @param currMove The move to apply to the board
+ * @param output A pointer for the board after the move has occurred to be stored in.
+ * @return Returns the status of the move. Whether or not the board was updated.
+ */
+__device__ status moveHandler(Board *input, Move currMove){
+    switch(currMove){
+        case(up):
+            // printf("Moving up \r\n");
+            upSolver(input);
+            break;
+        case down:
+            // printf("Moving down \r\n");
+            downSolver(input);
+            break;
+        case left:
+            // printf("Moving left \r\n");
+            leftSolver(input);
+            break;
+        case right:
+            // printf("Moving right \r\n");
+            rightSolver(input);
+            break;
+
+    }
+
+    bool changed = false;
+    for(uint8_t i=0; i < HEIGHT; i++){
+        for(uint8_t j=0; j < WIDTH;j++) {
+            if ((*output)[i][j] == 0) {
+                fail = false;
+            }
+            if ((*output)[i][j] != (*input)[i][j]) {
+                changed = true;
+            }
+        }
+    }
+
+    if(fail){
+        return boardFull;
+    }
+    else if(!changed){
+        return boardUnchanged;
+    }
+    randGen(output);
+    return boardUpdated;
+
+}
+
 /**
  * This function adds the random move to the board. This will most likely change later on to fit with the CUDA program so they produce the same results.
  * @param movedBoard A pointer to a Board object to have a random tile added to the board.
  */
-void randGen(Board * movedBoard){
-    //TODO Add in generating new moves. Need to figure out how to do random on CUDA
+__device__ void randGen(Board * movedBoard){
+    unsigned long long seed= (*movedBoard)[0][0] + 2 * (*movedBoard)[0][1] + 3 * (*movedBoard)[0][2] + 4 * (*movedBoard)[0][3] + 5 * (*movedBoard)[1][0] + 6 * (*movedBoard)[1][1] + 7 * (*movedBoard)[1][2] + 8 * (*movedBoard)[1][3];
+    curandState_t *state;
+    curand_init (seed, 0,0, curandState_t *state);
+
+    unsigned int randNum = curand(state);
+    unsigned char position = randNum % SIZE;
+    while((*movedBoard)[(randNum/WIDTH)][(randNum%HEIGHT)] != 0){
+        unsigned int randNum = curand(state);
+        unsigned char position = randNum % SIZE;
+    }
+    unsigned int randomValue = curand(state);
+    if(randomValue % 10 == 9){
+        (*movedBoard)[(randNum/WIDTH)][(randNum%HEIGHT)] = 4;
+    }
+    else{
+        (*movedBoard)[(randNum/WIDTH)][(randNum%HEIGHT)] = 2;
+    }
+
+
+}
+
+
+__global__ void kernel(int * scoreList){
+    tx = threadIdx.x;
+    bx = blockIdx.x;
+    bd = blockDim.x;
+
+    uint32_t threadNum = bx * bd + tx;
+
+    Board board;
+    int i,j;
+    for(i = 0; i < HEIGHT; i++){
+        for(j = 0; j < WIDTH; j++){
+            board[i][j] = BoardIn[i][j];
+        }
+    }
+
+    status stat;
+    Move mList[NUMMOVES];
+
+    mList[0] = (threadNum & m0Mask);
+    mList[1] = (threadNum & m1Mask);
+    mList[2] = (threadNum & m2Mask);
+    mList[3] = (threadNum & m3Mask);
+    mList[4] = (threadNum & m4Mask);
+    mList[5] = (threadNum & m5Mask);
+    mList[6] = (threadNum & m6Mask);
+    mList[7] = (threadNum & m7Mask);
+
+    scoreList[threadNum] = 0;
+    for(i = 0; i < NUMMOVES; i++){
+        stat = moveHandler(&board,mList[i]);
+        if(stat != boardUpdated){
+            break;
+        }
+        if(i != 7){
+            randGen(&board);
+        }
+        else{
+            scoreList[threadNum] = score(&board);
+        }
+
+
+    }
+    __syncthreads();
+    return;
 }
 
 

@@ -15,8 +15,8 @@
 #define SIZE 16
 //Number of iterations to search through
 #define NUMITERATIONS 8
-//Number of moves
-#define NUMMOVES 4
+//DO NOT CHANGE
+#define NUMMOVES 8
 
 
 
