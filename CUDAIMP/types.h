@@ -38,6 +38,11 @@ typedef enum status_t {
     boardFull = 2
 }status;
 
+typedef struct bStatus{
+    Board b;
+    status s;
+}boardStatus;
+
 
 
 
