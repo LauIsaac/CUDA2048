@@ -305,7 +305,7 @@ __global__ void kernel(Board *BoardIn, int * scoreList){
     int i,j;
     for(i = 0; i < HEIGHT; i++){
         for(j = 0; j < WIDTH; j++){
-            board[i][j] = (BoardIn)[i][j];
+            board[i][j] = (*BoardIn)[i][j];
         }
     }
 
@@ -313,14 +313,14 @@ __global__ void kernel(Board *BoardIn, int * scoreList){
     Move mList[NUMMOVES];
 
     //Bitwise and with mask ends up creating many invalid moves (see: 0xC000 & 0xC000), need to rightshift
-    mList[0] = (Move) (threadNum & m0Mask);
-    mList[1] = (Move) (threadNum & m1Mask);
-    mList[2] = (Move) (threadNum & m2Mask);
-    mList[3] = (Move) (threadNum & m3Mask);
-    mList[4] = (Move) (threadNum & m4Mask);
-    mList[5] = (Move) (threadNum & m5Mask);
-    mList[6] = (Move) (threadNum & m6Mask);
-    mList[7] = (Move) (threadNum & m7Mask);
+    mList[0] = (Move) ((threadNum & m0Mask) >> 14);
+    mList[1] = (Move) ((threadNum & m1Mask) >> 12);
+    mList[2] = (Move) ((threadNum & m2Mask) >> 10);
+    mList[3] = (Move) ((threadNum & m3Mask) >> 8);
+    mList[4] = (Move) ((threadNum & m4Mask) >> 6);
+    mList[5] = (Move) ((threadNum & m5Mask) >> 4);
+    mList[6] = (Move) ((threadNum & m6Mask) >> 2);
+    mList[7] = (Move) ((threadNum & m7Mask));
 
     scoreList[threadNum] = 0;
     for(i = 0; i < NUMMOVES; i++){
