@@ -320,7 +320,7 @@ __global__ void kernel(Board *BoardIn, int * scoreList){
     int i,j;
     for(i = 0; i < HEIGHT; i++){
         for(j = 0; j < WIDTH; j++){
-            boardIn[i][j] = (*BoardIn)[i][j];
+            boardOut[i][j] = boardIn[i][j];
         }
     }
 
