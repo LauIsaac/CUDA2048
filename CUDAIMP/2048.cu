@@ -32,9 +32,6 @@
 
 
 
-
-
-
 /**
  * This function returns a score for the Board. Right now just returns the game score, may be worked to include neighboring tiles combined scores if we need more accuracy.
  * @param input Pointer to Board to be scored.
@@ -179,6 +176,7 @@ __device__ void downSolver(Board * output){
     int8_t i, j, moveCounter, mergeCounter;
 
     //This section moves all items through the 0's.
+    //Might not need to dereference board pointers
     moveCounter = 0;
     for(j=0; j < WIDTH; j++){
         for(i=HEIGHT-1; i >= 0; i--){
@@ -307,13 +305,14 @@ __global__ void kernel(Board *BoardIn, int * scoreList){
     int i,j;
     for(i = 0; i < HEIGHT; i++){
         for(j = 0; j < WIDTH; j++){
-            board[i][j] = (*BoardIn)[i][j];
+            board[i][j] = (BoardIn)[i][j];
         }
     }
 
     status stat;
     Move mList[NUMMOVES];
 
+    //Bitwise and with mask ends up creating many invalid moves (see: 0xC000 & 0xC000), need to rightshift
     mList[0] = (Move) (threadNum & m0Mask);
     mList[1] = (Move) (threadNum & m1Mask);
     mList[2] = (Move) (threadNum & m2Mask);

@@ -4,7 +4,7 @@ WB_PATH=/work/ece497/sp1920/libwb
 OPTS=-std=c++11 -arch=sm_30 -I $(WB_PATH) $(WB_PATH)/libwb.a
 CC=nvcc
 
-all: $(PROG) dataset_generator
+all: $(PROG) 
 
 
 $(PROG): $(PROG).cu
