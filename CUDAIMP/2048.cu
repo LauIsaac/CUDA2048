@@ -37,25 +37,25 @@
  * @param input Pointer to Board to be scored.
  * @return The score
  */
-__device__ uint32_t score(Board input){
+__device__ uint32_t score(Board * input){
     uint32_t scoreVal;
     scoreVal = 0;
     for(uint8_t i=0; i < HEIGHT; i++){
         for(uint8_t j=0; j < WIDTH; j++){
-            if(input[i][j] == 2){
+            if((*input)[i][j] == 2){
                 scoreVal += 2;
             }
-            else if(input[i][j] != 0){
-                scoreVal += input[i][j]+((input[i][j])/2);
+            else if((*input)[i][j] != 0){
+                scoreVal += (*input)[i][j]+(((*input)[i][j])/2);
             }
-            printf("[%d] ",input[i][j]);
+            printf("[%d] ",(*input)[i][j]);
         }
         printf("\r\n");
     }
     return scoreVal;
 }
 
-__device__ void leftSolver(Board * output){
+__device__ void leftSolver(Board * input, Board * output){
     int8_t i, j, moveCounter, mergeCounter;
 
     //This section moves all items through the 0's.
@@ -96,7 +96,7 @@ __device__ void leftSolver(Board * output){
 }
 
 
-__device__ void rightSolver(Board * output){
+__device__ void rightSolver(Board * input, Board * output){
     int8_t i, j, moveCounter, mergeCounter;
 
     //This section moves all items through the 0's.
@@ -179,8 +179,14 @@ __device__ void upSolver(Board * input, Board * output){
 
 
 
-__device__ void downSolver(Board * output){
+__device__ void downSolver(Board * input, Board * output){
     int8_t i, j, moveCounter, mergeCounter;
+
+    for(int q = 0; q < HEIGHT; q++){
+        for(int r = 0; r < WIDTH; r++){
+            (*output)[q][r] = (*input)[q][r];
+        }
+    }
 
     //This section moves all items through the 0's.
     //Might not need to dereference board pointers
@@ -219,12 +225,12 @@ __device__ void downSolver(Board * output){
  * This function adds the random move to the board. This will most likely change later on to fit with the CUDA program so they produce the same results.
  * @param movedBoard A pointer to a Board object to have a random tile added to the board.
  */
- __device__ void randGen(Board input, Board * movedBoard){
-    
+ __device__ void randGen(Board * input, Board * movedBoard){
+
 
     for(int q = 0; q < HEIGHT; q++){
         for(int r = 0; r < WIDTH; r++){
-            (*movedBoard)[q][r] = input[q][r];
+            (*movedBoard)[q][r] = (*input)[q][r];
         }
     }
 
@@ -266,7 +272,7 @@ __device__ status moveHandler(Board * input, Board * output, Move currMove){
             // printf("Moving up \r\n");
             upSolver(input, output);
             break;
-        /*case down:
+        case down:
             // printf("Moving down \r\n");
             downSolver(input, output);
             break;
@@ -278,7 +284,7 @@ __device__ status moveHandler(Board * input, Board * output, Move currMove){
             // printf("Moving right \r\n");
             rightSolver(input, output);
             break;
-        */
+
     }
 
     bool changed = false;
@@ -289,9 +295,9 @@ __device__ status moveHandler(Board * input, Board * output, Move currMove){
             if ((*output)[i][j] == 0) {
                 fail = false;
             }
-            //if ((*checkBoard)[i][j] != (*input)[i][j]) {
-            //    changed = true;
-            //}
+            if ((*output)[i][j] != (*input)[i][j]) {
+                changed = true;
+            }
         }
     }
 
@@ -323,6 +329,7 @@ __global__ void kernel(Board *BoardIn, int * scoreList){
             boardIn[i][j] = (*BoardIn)[i][j];
         }
     }
+    Board movedBoard;
 
     status stat;
     Move mList[NUMMOVES];
@@ -344,10 +351,15 @@ __global__ void kernel(Board *BoardIn, int * scoreList){
             break;
         }
         if(i != 7){
-            randGen(boardIn,&boardOut);
+            randGen(&boardOut,&movedBoard);
+            for(int q = 0; q < HEIGHT; q++){
+                for(int r = 0; r < WIDTH; r++){
+                    boardIn[q][r] = movedBoard[q][r];
+                }
+            }
         }
         else{
-            scoreList[threadNum] = score(boardOut);
+            scoreList[threadNum] = score(&boardOut);
         }
         
 
