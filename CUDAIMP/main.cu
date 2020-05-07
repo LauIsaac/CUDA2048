@@ -18,6 +18,8 @@
 
 
 
+
+
 const __restrict__ Board BoardIn;
 
 
@@ -326,6 +328,60 @@ __global__ void kernel(int * scoreList){
 
 
 int main() {
-    std::cout << "Hello, World!" << std::endl;
+    wbArg_t arg;
+    Board hostInputBoard;
+    Board deviceInputBoard;
+    char *inputBoardFile
+    int *hostScoreList;
+    int *deviceScoreList;
+    int Score;
+        
+    arg = wbArg_read(argc, argv);
+    
+    wbTime_start(GPU, "Doing GPU Computation (memory + compute)");
+
+    wbTime_start(GPU, "Doing GPU memory allocation");
+    
+    inputBoardFile = wbArg_getInputFile(arg, 0);
+    
+    for(int i = 0; i < HEIGHT; i++){
+        for(int j = 0; j < WIDTH; j++){
+            hostInputBoard[i][j] = inputBoardFile[i * WIDTH + j];
+        }
+    }
+
+    int numScores = (int)pow(4, 8);
+    int scoreListSize = numScores * sizeof(int);
+    int boardSize = SIZE * sizeof(int);
+
+    cudaMalloc(&deviceScoreList, scoreListSize); 
+
+    wbTime_stop(GPU, "Doing GPU memory allocation");
+
+    wbTime_start(Copy, "Copying data to the GPU");
+    
+    cudaMemcpyToSymbol(deviceInputBoard, hostInputBoard, boardSize);
+
+    wbTime_stop(Copy, "Copying data to the GPU");
+
+    wbTime_start(Compute, "Doing the computation on the GPU");
+
+    dim3 DimGrid(256, 1, 1);
+    dim3 DimBlock(256, 1, 1);
+    kernel<<<DimGrid, DimBlock>>>(deviceScoreList);
+
+    wbTime_stop(Compute, "Doing the computation on the GPU");
+
+    ////////////////////////////////////////////////////
+    wbTime_start(Copy, "Copying data from the GPU");
+    cudaMemcpy(hostScoreList, deviceScoreList, scoreListSize, cudaMemcpyDevicetoHost);
+    wbTime_stop(Copy, "Copying data from the GPU");
+
+    wbTime_stop(GPU, "Doing GPU Computation (memory + compute)");
+
+    wbSolution(args, hostScoreList, scoreListSize);
+
+    cudaFree(deviceScoreList);
+
     return 0;
 }
