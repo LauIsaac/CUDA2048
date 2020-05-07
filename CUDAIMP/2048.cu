@@ -235,16 +235,16 @@ __device__ void downSolver(Board * input, Board * output){
     }
 
     unsigned long long seed= (*movedBoard)[0][0] + 2 * (*movedBoard)[0][1] + 3 * (*movedBoard)[0][2] + 4 * (*movedBoard)[0][3] + 5 * (*movedBoard)[1][0] + 6 * (*movedBoard)[1][1] + 7 * (*movedBoard)[1][2] + 8 * (*movedBoard)[1][3];
-    curandState_t *state;
-    curand_init(seed, 0,0, state);
+    curandState_t state;
+    curand_init(seed, 0,0, &state);
 
-    unsigned int randNum = curand(state);
+    unsigned int randNum = curand(&state);
     unsigned char position = randNum % SIZE;
     while((*movedBoard)[(position/WIDTH)][(position%HEIGHT)] != 0){
-        randNum = curand(state);
+        randNum = curand(&state);
         position = randNum % SIZE;
     }
-    unsigned int randomValue = curand(state);
+    unsigned int randomValue = curand(&state);
     if(randomValue % 10 == 9){
         (*movedBoard)[(position/WIDTH)][(position%HEIGHT)] = 4;
     }
@@ -454,7 +454,7 @@ int main(int argc, char **argv) {
 
     wbTime_stop(GPU, "Doing GPU Computation (memory + compute)");
 
-    for(uint32_t num = 0; num < numScores; num++){\
+    for(uint32_t num = 0; num < numScores; num++){
         if(hostScoreList[num] != 0){
             printf("Score %d is %d \r\n", num, hostScoreList[num]);
         }
