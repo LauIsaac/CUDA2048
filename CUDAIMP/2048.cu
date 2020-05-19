@@ -50,9 +50,9 @@ __device__ uint32_t score(Board * input){
         for(uint8_t j=0; j < WIDTH; j++){
 
             scoreVal += (*input)[i][j];
-            printf("[%d] ",(*input)[i][j]);
+            //printf("[%d] ",(*input)[i][j]);
         }
-        printf("\r\n");
+        //printf("\r\n");
     }
     return scoreVal;
 }
@@ -400,7 +400,7 @@ __global__ void kernel(Board *BoardIn, int * scoreList){
 
     }
     if(scoreList[threadNum] != 0){
-        printf("DEBUG SCORE:%d\r\n",scoreList[threadNum]);
+        //printf("DEBUG SCORE:%d\r\n",scoreList[threadNum]);
     }
     __syncthreads();
     return;
@@ -434,6 +434,7 @@ int main(int argc, char **argv) {
 
     //inputBoardFile = (char *)wbImport(wbArg_getInputFile(arg, 0), &inputLength);
     hostScoreList = (int *)malloc(scoreListSize);
+    hostFinalScore = (int *) malloc(blockSize * sizeof(int));
     /*
     for(int i = 0; i < HEIGHT; i++){
         for(int j = 0; j < WIDTH; j++){
@@ -497,38 +498,38 @@ int main(int argc, char **argv) {
 
     wbTime_stop(GPU, "Doing GPU Computation (memory + compute)");
 
-    long i;
-    int upCount = 0;
-    int downCount = 0;
-    int leftCount = 0;
-    int rightCount = 0;
-    for(i = 0; i < blockSize; i++){
-        printf("Return %d: %d \r\n", i, hostFinalScore[i]);
-    }
+    // long i;
+    // int upCount = 0;
+    // int downCount = 0;
+    // int leftCount = 0;
+    // int rightCount = 0;
+    // for(i = 0; i < blockSize; i++){
+    //     printf("Return %d: %d \r\n", i, hostFinalScore[i]);
+    // }
 
     //Determine the highest Board Score
-    for (i = 0; i < eighthSize; i++) {
-        printf("%d : %d \r\n", i, hostScoreList[i]);
-        if (hostScoreList[i] == hostFinalScore[0]) {
-            if(i < quarterSize){
-                upCount++;
-            } else if(i < halfSize){
-                downCount++;
-            } else if(i < threeQuarterSize){
-                leftCount++;
-            } else{
-                rightCount++;
-            }
-        }
-    }
+    // for (i = 0; i < eighthSize; i++) {
+    //     printf("%d : %d \r\n", i, hostScoreList[i]);
+    //     if (hostScoreList[i] == hostFinalScore[0]) {
+    //         if(i < quarterSize){
+    //             upCount++;
+    //         } else if(i < halfSize){
+    //             downCount++;
+    //         } else if(i < threeQuarterSize){
+    //             leftCount++;
+    //         } else{
+    //             rightCount++;
+    //         }
+    //     }
+    // }
 
-    int total = upCount + downCount + leftCount + rightCount;
+    // int total = upCount + downCount + leftCount + rightCount;
 
-    printf("Up CHANCE: %d / %d \r\n", upCount, total);
-    printf("Down CHANCE: %d / %d \r\n", downCount, total);
-    printf("Left CHANCE: %d / %d \r\n", leftCount, total);
-    printf("Right CHANCE: %d / %d \r\n", rightCount, total);
-    printf("Highest Score Predicted: %ld \r\n", hostFinalScore[0]);
+    // printf("Up CHANCE: %d / %d \r\n", upCount, total);
+    // printf("Down CHANCE: %d / %d \r\n", downCount, total);
+    // printf("Left CHANCE: %d / %d \r\n", leftCount, total);
+    // printf("Right CHANCE: %d / %d \r\n", rightCount, total);
+    // printf("Highest Score Predicted: %ld \r\n", hostFinalScore[0]);
 
     wbSolution(arg, hostScoreList, scoreListSize);
 
