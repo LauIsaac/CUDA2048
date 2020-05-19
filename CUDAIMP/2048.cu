@@ -42,12 +42,8 @@ __device__ uint32_t score(Board * input){
     scoreVal = 0;
     for(uint8_t i=0; i < HEIGHT; i++){
         for(uint8_t j=0; j < WIDTH; j++){
-            if((*input)[i][j] == 2){
-                scoreVal += 2;
-            }
-            else if((*input)[i][j] != 0){
-                scoreVal += (*input)[i][j]+(((*input)[i][j])/2);
-            }
+
+            scoreVal += (*input)[i][j];
             printf("[%d] ",(*input)[i][j]);
         }
         printf("\r\n");
@@ -57,6 +53,12 @@ __device__ uint32_t score(Board * input){
 
 __device__ void leftSolver(Board * input, Board * output){
     int8_t i, j, moveCounter, mergeCounter;
+
+    for(int q = 0; q < HEIGHT; q++){
+        for(int r = 0; r < WIDTH; r++){
+            (*output)[q][r] = (*input)[q][r];
+        }
+    }
 
     //This section moves all items through the 0's.
     moveCounter = 0;
@@ -98,6 +100,13 @@ __device__ void leftSolver(Board * input, Board * output){
 
 __device__ void rightSolver(Board * input, Board * output){
     int8_t i, j, moveCounter, mergeCounter;
+
+
+    for(int q = 0; q < HEIGHT; q++){
+        for(int r = 0; r < WIDTH; r++){
+            (*output)[q][r] = (*input)[q][r];
+        }
+    }
 
     //This section moves all items through the 0's.
     moveCounter = 0;
@@ -225,7 +234,7 @@ __device__ void downSolver(Board * input, Board * output){
  * This function adds the random move to the board. This will most likely change later on to fit with the CUDA program so they produce the same results.
  * @param movedBoard A pointer to a Board object to have a random tile added to the board.
  */
- __device__ void randGen(Board * input, Board * movedBoard){
+__device__ void randGen(Board * input, Board * movedBoard){
 
 
     for(int q = 0; q < HEIGHT; q++){
@@ -265,7 +274,7 @@ __device__ void downSolver(Board * input, Board * output){
  */
 __device__ status moveHandler(Board * input, Board * output, Move currMove){
 
-    
+
 
     switch(currMove){
         case(up):
@@ -361,7 +370,7 @@ __global__ void kernel(Board *BoardIn, int * scoreList){
         else{
             scoreList[threadNum] = score(&boardOut);
         }
-        
+
 
 
     }
@@ -384,9 +393,9 @@ int main(int argc, char **argv) {
     int *deviceScoreList;
     int Score;
     int inputLength;
-        
+
     arg = wbArg_read(argc, argv);
-    
+
     wbTime_start(GPU, "Doing GPU Computation (memory + compute)");
 
     wbTime_start(GPU, "Doing GPU memory allocation");
@@ -395,7 +404,7 @@ int main(int argc, char **argv) {
     int numScores = (int)pow(4, 8);
     int scoreListSize = numScores * sizeof(int);
     int boardSize = SIZE * sizeof(int);
-    
+
     //inputBoardFile = (char *)wbImport(wbArg_getInputFile(arg, 0), &inputLength);
     hostScoreList = (int *)malloc(scoreListSize);
     /*
@@ -406,7 +415,7 @@ int main(int argc, char **argv) {
     }
     */
 
-    
+
     hostInputBoard[0][0] = 0;
     hostInputBoard[0][1] = 0;
     hostInputBoard[0][2] = 0;
@@ -417,21 +426,21 @@ int main(int argc, char **argv) {
     hostInputBoard[1][3] = 0;
     hostInputBoard[2][0] = 0;
     hostInputBoard[2][1] = 2;
-    hostInputBoard[2][2] = 0;
+    hostInputBoard[2][2] = 256;
     hostInputBoard[2][3] = 0;
     hostInputBoard[3][0] = 0;
     hostInputBoard[3][1] = 0;
     hostInputBoard[3][2] = 0;
     hostInputBoard[3][3] = 0;
-    
 
-    wbCheck(cudaMalloc((void**)&deviceScoreList, scoreListSize)); 
-    wbCheck(cudaMalloc((void**)&deviceInputBoard, boardSize)); 
+
+    wbCheck(cudaMalloc((void**)&deviceScoreList, scoreListSize));
+    wbCheck(cudaMalloc((void**)&deviceInputBoard, boardSize));
 
     wbTime_stop(GPU, "Doing GPU memory allocation");
 
     wbTime_start(Copy, "Copying data to the GPU");
-    
+
     wbCheck(cudaMemcpy(deviceInputBoard, &hostInputBoard, boardSize, cudaMemcpyHostToDevice));
 
 
@@ -444,7 +453,7 @@ int main(int argc, char **argv) {
     kernel<<<DimGrid, DimBlock>>>(deviceInputBoard,deviceScoreList);
 
     wbTime_stop(Compute, "Doing the computation on the GPU");
-    
+
     cudaDeviceSynchronize();
     wbCheck(cudaPeekAtLastError());
     ////////////////////////////////////////////////////
