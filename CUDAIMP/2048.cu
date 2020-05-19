@@ -15,6 +15,12 @@
 #define m6Mask 0x000C
 #define m7Mask 0x0003
 
+#define eighthSize 65536
+#define quarterSize 16384
+#define halfSize 32768
+#define threeQuarterSize 49152
+
+#define blockSize 256
 
 
 #define wbCheck(stmt)                                                     \
@@ -320,6 +326,25 @@ __device__ status moveHandler(Board * input, Board * output, Move currMove){
 
 }
 
+__global__ void maxReduce(int *d_idata, int *d_odata) {
+    __shared__ int sdata[512];
+
+    unsigned int tid = threadIdx.x;
+    unsigned int index = (blockIdx.x * blockDim.x) + tid;
+    sdata[tid] = d_idata[index];
+    __syncthreads();
+
+    for (unsigned int stride = blockDim.x; stride > 0; stride /= 2) {
+        if (tid < stride){
+            sdata[tid] = max(sdata[tid], sdata[tid + stride]);
+        }
+    }
+    __syncthreads();
+
+    if (tid == 0){
+        d_odata[blockIdx.x] = sdata[0];
+    }
+}
 
 
 
@@ -390,7 +415,9 @@ int main(int argc, char **argv) {
     Board * deviceInputBoard;
     char *inputBoardFile;
     int *hostScoreList;
+    int *hostFinalScore;
     int *deviceScoreList;
+    int *deviceFinalScore;
     int Score;
     int inputLength;
 
@@ -437,6 +464,9 @@ int main(int argc, char **argv) {
     wbCheck(cudaMalloc((void**)&deviceScoreList, scoreListSize));
     wbCheck(cudaMalloc((void**)&deviceInputBoard, boardSize));
 
+    //CUDA MALLOC SINGLE SCORE FROM EACH BLOCK
+    wbCheck(cudaMalloc((void**)&deviceFinalScore, blockSize * sizeof(int)));
+
     wbTime_stop(GPU, "Doing GPU memory allocation");
 
     wbTime_start(Copy, "Copying data to the GPU");
@@ -461,17 +491,52 @@ int main(int argc, char **argv) {
     wbCheck(cudaMemcpy(hostScoreList, deviceScoreList, scoreListSize, cudaMemcpyDeviceToHost));
     wbTime_stop(Copy, "Copying data from the GPU");
 
+    //RUN REDUCTION KERNEL
+    maxReduce<<<DimGrid,DimBlock>>>(deviceScoreList, deviceFinalScore);
+    wbCheck(cudaMemcpy(hostFinalScore, deviceFinalScore, blockSize * sizeof(int), cudaMemcpyDeviceToHost));
+
     wbTime_stop(GPU, "Doing GPU Computation (memory + compute)");
 
-    for(uint32_t num = 0; num < numScores; num++){
-        if(hostScoreList[num] != 0){
-            printf("Score %d is %d \r\n", num, hostScoreList[num]);
+    long i;
+    int upCount = 0;
+    int downCount = 0;
+    int leftCount = 0;
+    int rightCount = 0;
+    for(i = 0; i < blockSize; i++){
+        printf("Return %d: %d \r\n", i, hostFinalScore[i]);
+    }
+
+    //Determine the highest Board Score
+    for (i = 0; i < eighthSize; i++) {
+        printf("%d : %d \r\n", i, hostScoreList[i]);
+        if (hostScoreList[i] == hostFinalScore[0]) {
+            if(i < quarterSize){
+                upCount++;
+            } else if(i < halfSize){
+                downCount++;
+            } else if(i < threeQuarterSize){
+                leftCount++;
+            } else{
+                rightCount++;
+            }
         }
     }
+
+    int total = upCount + downCount + leftCount + rightCount;
+
+    printf("Up CHANCE: %d / %d \r\n", upCount, total);
+    printf("Down CHANCE: %d / %d \r\n", downCount, total);
+    printf("Left CHANCE: %d / %d \r\n", leftCount, total);
+    printf("Right CHANCE: %d / %d \r\n", rightCount, total);
+    printf("Highest Score Predicted: %ld \r\n", hostFinalScore[0]);
 
     wbSolution(arg, hostScoreList, scoreListSize);
 
     wbCheck(cudaFree(deviceScoreList));
+    wbCheck(cudaFree(deviceInputBoard));
+    wbCheck(cudaFree(deviceFinalScore));
+    free(hostScoreList);
+    free(hostFinalScore);
 
     return 0;
 }
