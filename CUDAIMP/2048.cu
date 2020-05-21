@@ -498,38 +498,38 @@ int main(int argc, char **argv) {
 
     wbTime_stop(GPU, "Doing GPU Computation (memory + compute)");
 
-    // long i;
-    // int upCount = 0;
-    // int downCount = 0;
-    // int leftCount = 0;
-    // int rightCount = 0;
-    // for(i = 0; i < blockSize; i++){
-    //     printf("Return %d: %d \r\n", i, hostFinalScore[i]);
-    // }
+    long i;
+    int upCount = 0;
+    int downCount = 0;
+    int leftCount = 0;
+    int rightCount = 0;
+    for(i = 0; i < blockSize; i++){
+        printf("Return %d: %d \r\n", i, hostFinalScore[i]);
+    }
 
     //Determine the highest Board Score
-    // for (i = 0; i < eighthSize; i++) {
-    //     printf("%d : %d \r\n", i, hostScoreList[i]);
-    //     if (hostScoreList[i] == hostFinalScore[0]) {
-    //         if(i < quarterSize){
-    //             upCount++;
-    //         } else if(i < halfSize){
-    //             downCount++;
-    //         } else if(i < threeQuarterSize){
-    //             leftCount++;
-    //         } else{
-    //             rightCount++;
-    //         }
-    //     }
-    // }
+    for (i = 0; i < eighthSize; i++) {
+        printf("%d : %d \r\n", i, hostScoreList[i]);
+        if (hostScoreList[i] == hostFinalScore[0]) {
+            if(i < quarterSize){
+                upCount++;
+            } else if(i < halfSize){
+                downCount++;
+            } else if(i < threeQuarterSize){
+                leftCount++;
+            } else{
+                rightCount++;
+            }
+        }
+    }
 
-    // int total = upCount + downCount + leftCount + rightCount;
+    int total = upCount + downCount + leftCount + rightCount;
 
-    // printf("Up CHANCE: %d / %d \r\n", upCount, total);
-    // printf("Down CHANCE: %d / %d \r\n", downCount, total);
-    // printf("Left CHANCE: %d / %d \r\n", leftCount, total);
-    // printf("Right CHANCE: %d / %d \r\n", rightCount, total);
-    // printf("Highest Score Predicted: %ld \r\n", hostFinalScore[0]);
+    printf("Up CHANCE: %d / %d \r\n", upCount, total);
+    printf("Down CHANCE: %d / %d \r\n", downCount, total);
+    printf("Left CHANCE: %d / %d \r\n", leftCount, total);
+    printf("Right CHANCE: %d / %d \r\n", rightCount, total);
+    printf("Highest Score Predicted: %ld \r\n", hostFinalScore[0]);
 
     wbSolution(arg, hostScoreList, scoreListSize);
 
