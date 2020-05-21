@@ -348,7 +348,11 @@ __global__ void maxReduce(int *d_idata, int *d_odata) {
 
 
 
-__global__ void kernel(Board *BoardIn, int * scoreList){
+__global__ void kernel(Board *BoardIn, int *d_odata){
+
+
+    __shared__ int scoreList[512];
+
     int tx = threadIdx.x;
     int bx = blockIdx.x;
     int bd = blockDim.x;
@@ -378,7 +382,7 @@ __global__ void kernel(Board *BoardIn, int * scoreList){
     mList[6] = (Move) ((threadNum & m6Mask) >> 2);
     mList[7] = (Move) ((threadNum & m7Mask));
 
-    scoreList[threadNum] = 0;
+    scoreList[tx] = 0;
     for(i = 0; i < NUMMOVES; i++){
         stat = moveHandler(&boardIn,&boardOut,mList[i]);
         if(stat != boardUpdated){
@@ -393,16 +397,28 @@ __global__ void kernel(Board *BoardIn, int * scoreList){
             }
         }
         else{
-            scoreList[threadNum] = score(&boardOut);
+            scoreList[tx] = score(&boardOut);
         }
 
 
 
     }
-    if(scoreList[threadNum] != 0){
+    if(scoreList[tx] != 0){
         //printf("DEBUG SCORE:%d\r\n",scoreList[threadNum]);
     }
     __syncthreads();
+
+    for (unsigned int s = 1; s < blockDim.x; s *= 2) {
+        if (tx % (2 * s) == 0) {
+            scoreList[tx] += scoreList[tx + s];
+        }
+
+        __syncthreads();
+    }
+
+    if (tx == 0){
+        d_odata[blockIdx.x] = scoreList[0];
+    }
     return;
 }
 
@@ -462,7 +478,7 @@ int main(int argc, char **argv) {
     hostInputBoard[3][3] = 0;
 
 
-    wbCheck(cudaMalloc((void**)&deviceScoreList, scoreListSize));
+    //wbCheck(cudaMalloc((void**)&deviceScoreList, scoreListSize));
     wbCheck(cudaMalloc((void**)&deviceInputBoard, boardSize));
 
     //CUDA MALLOC SINGLE SCORE FROM EACH BLOCK
@@ -481,7 +497,7 @@ int main(int argc, char **argv) {
 
     dim3 DimGrid(256, 1, 1);
     dim3 DimBlock(256, 1, 1);
-    kernel<<<DimGrid, DimBlock>>>(deviceInputBoard,deviceScoreList);
+    kernel<<<DimGrid, DimBlock>>>(deviceInputBoard,deviceFinalScore);
 
     wbTime_stop(Compute, "Doing the computation on the GPU");
 
@@ -489,23 +505,23 @@ int main(int argc, char **argv) {
     wbCheck(cudaPeekAtLastError());
     ////////////////////////////////////////////////////
     wbTime_start(Copy, "Copying data from the GPU");
-    wbCheck(cudaMemcpy(hostScoreList, deviceScoreList, scoreListSize, cudaMemcpyDeviceToHost));
+    //wbCheck(cudaMemcpy(hostScoreList, deviceScoreList, scoreListSize, cudaMemcpyDeviceToHost));
     wbTime_stop(Copy, "Copying data from the GPU");
 
     //RUN REDUCTION KERNEL
-    maxReduce<<<DimGrid,DimBlock>>>(deviceScoreList, deviceFinalScore);
+    //maxReduce<<<DimGrid,DimBlock>>>(deviceScoreList, deviceFinalScore);
     wbCheck(cudaMemcpy(hostFinalScore, deviceFinalScore, blockSize * sizeof(int), cudaMemcpyDeviceToHost));
 
     wbTime_stop(GPU, "Doing GPU Computation (memory + compute)");
 
-    // long i;
-    // int upCount = 0;
-    // int downCount = 0;
-    // int leftCount = 0;
-    // int rightCount = 0;
-    // for(i = 0; i < blockSize; i++){
-    //     printf("Return %d: %d \r\n", i, hostFinalScore[i]);
-    // }
+    long i;
+    int upCount = 0;
+    int downCount = 0;
+    int leftCount = 0;
+    int rightCount = 0;
+    for(i = 0; i < blockSize; i++){
+        printf("Return %d: %d \r\n", i, hostFinalScore[i]);
+    }
 
     //Determine the highest Board Score
     // for (i = 0; i < eighthSize; i++) {
