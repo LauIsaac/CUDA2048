@@ -15,10 +15,10 @@
 #define m6Mask 0x000C
 #define m7Mask 0x0003
 
-#define eighthSize 65536
-#define quarterSize 16384
-#define halfSize 32768
-#define threeQuarterSize 49152
+//#define eighthSize 65536
+#define quarterSize 64
+#define halfSize 128
+#define threeQuarterSize 192
 
 #define blockSize 256
 
@@ -383,6 +383,8 @@ __global__ void kernel(Board *BoardIn, int *d_odata){
     mList[7] = (Move) ((threadNum & m7Mask));
 
     scoreList[tx] = 0;
+    scoreList[tx + blockSize] = 0;
+
     for(i = 0; i < NUMMOVES; i++){
         stat = moveHandler(&boardIn,&boardOut,mList[i]);
         if(stat != boardUpdated){
@@ -400,21 +402,30 @@ __global__ void kernel(Board *BoardIn, int *d_odata){
             scoreList[tx] = score(&boardOut);
         }
 
-
-
     }
     if(scoreList[tx] != 0){
         //printf("DEBUG SCORE:%d\r\n",scoreList[threadNum]);
     }
     __syncthreads();
 
-    for (unsigned int s = 1; s < blockDim.x; s *= 2) {
-        if (tx % (2 * s) == 0) {
-            scoreList[tx] += scoreList[tx + s];
-        }
+    // for (unsigned int s = 1; s < blockDim.x; s *= 2) {
+    //     if (tx % (2 * s) == 0) {
+    //         scoreList[tx] += scoreList[tx + s];
+    //     }
 
-        __syncthreads();
+    //     __syncthreads();
+    // }
+
+    for (unsigned int stride = blockDim.x; stride > 0; stride /= 2) {
+        if (tx < stride){
+            scoreList[tx] = max(scoreList[tx], scoreList[tx + stride]);
+        }
     }
+    __syncthreads();
+
+    // if (tid == 0){
+    //     d_odata[blockIdx.x] = sdata[0];
+    // }
 
     if (tx == 0){
         d_odata[blockIdx.x] = scoreList[0];
@@ -432,7 +443,7 @@ int main(int argc, char **argv) {
     char *inputBoardFile;
     int *hostScoreList;
     int *hostFinalScore;
-    int *deviceScoreList;
+    //int *deviceScoreList;
     int *deviceFinalScore;
     int Score;
     int inputLength;
@@ -519,14 +530,21 @@ int main(int argc, char **argv) {
     int downCount = 0;
     int leftCount = 0;
     int rightCount = 0;
-    for(i = 0; i < blockSize; i++){
-        printf("Return %d: %d \r\n", i, hostFinalScore[i]);
-    }
+    int highestScore = 0;
+    // for(i = 0; i < blockSize; i++){
+    //     printf("Return %d: %d \r\n", i, hostFinalScore[i]);
+    // }
 
     //Determine the highest Board Score
-    // for (i = 0; i < eighthSize; i++) {
-    //     printf("%d : %d \r\n", i, hostScoreList[i]);
-    //     if (hostScoreList[i] == hostFinalScore[0]) {
+    // for (i = 0; i < blockSize; i++) {
+    //     printf("%d : %d \r\n", i, hostFinalScore[i]);
+    //     if (hostFinalScore[i] >= highestScore) {
+    //         if (hostFinalScore[i] > highestScore){
+    //             upCount = 0;
+    //             downCount = 0;
+    //             leftCount = 0;
+    //             rightCount = 0;
+    //         }
     //         if(i < quarterSize){
     //             upCount++;
     //         } else if(i < halfSize){
@@ -549,10 +567,10 @@ int main(int argc, char **argv) {
 
     wbSolution(arg, hostScoreList, scoreListSize);
 
-    wbCheck(cudaFree(deviceScoreList));
+    //wbCheck(cudaFree(deviceScoreList));
     wbCheck(cudaFree(deviceInputBoard));
     wbCheck(cudaFree(deviceFinalScore));
-    free(hostScoreList);
+    //free(hostScoreList);
     free(hostFinalScore);
 
     return 0;
